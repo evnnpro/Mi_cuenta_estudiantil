@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mi Cuenta Estudiantil</title>
+<style>
+:root{--p:#d99ab7;--d:#985675;--bg:#fff8fb;--line:#efdce6;--ink:#493744}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px Arial,sans-serif}
+header{padding:24px 5%;background:linear-gradient(120deg,#f3dce7,#fff0f6);color:var(--d)}
+h1{margin:0;font-size:30px}header p{margin:7px 0 0}main{max-width:1050px;margin:22px auto;padding:0 15px}
+.note,.card,.panel{background:white;border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:15px}
+.note{background:#fff0f5;color:#805c70;font-size:13px}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+small{color:#8b7883;font-weight:bold}.num{font-size:25px;color:var(--d);font-weight:bold;margin-top:6px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.panel h2{color:var(--d);font-size:18px;margin:0 0 13px}
+form{display:grid;grid-template-columns:1fr 1fr;gap:9px}label{font-size:12px;color:#8b7883;display:block;margin-bottom:4px}
+input,select{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:white}
+button,.filelabel{border:0;border-radius:9px;padding:10px 13px;background:var(--p);color:white;font-weight:bold;cursor:pointer}
+.secondary,.filelabel{background:#f8e7ef;color:var(--d)}.danger{background:#fae8ed;color:#b85d73}
+.full{grid-column:1/-1}.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;font-size:13px}td,th{text-align:left;padding:8px;border-bottom:1px solid #f2e6ec}th{color:var(--d);background:#fff6fa}
+.muted{font-size:12px;color:#8b7883}.empty{text-align:center;color:#8b7883;padding:14px}
+.bar{display:grid;grid-template-columns:105px 1fr 75px;gap:8px;align-items:center;margin:10px 0;font-size:13px}.track{height:12px;background:#f7eaf0;border-radius:12px}.fill{height:12px;background:var(--p);border-radius:12px}
+@media(max-width:700px){.cards,.grid{grid-template-columns:1fr}form{grid-template-columns:1fr}.full{grid-column:auto}}
+</style></head><body>
+<header><h1>Mi Cuenta Estudiantil</h1><p>Organiza tus ingresos, gastos y pagos escolares · Rosa pastel elegante</p></header>
+<main>
+<div class="note"><b>Versión personal de prueba:</b> los datos se guardan solo en este navegador y dispositivo. No es todavía una cuenta en línea. Usa datos ficticios mientras pruebas; no guardes contraseñas ni datos bancarios.</div>
+<div class="cards"><div class="card"><small>INGRESOS</small><div class="num" id="income">Bs 0,00</div></div><div class="card"><small>GASTOS</small><div class="num" id="expenses">Bs 0,00</div></div><div class="card"><small>SALDO</small><div class="num" id="balance">Bs 0,00</div></div></div>
+<div class="grid">
+<section class="panel"><h2>Registrar movimiento</h2><form id="mf">
+<div><label>Fecha</label><input id="date" type="date" required></div>
+<div><label>Tipo</label><select id="type"><option>Ingreso</option><option>Gasto</option></select></div>
+<div><label>Categoría</label><select id="cat"><option>Dinero recibido</option><option>Material escolar</option><option>Transporte</option><option>Alimentación</option><option>Fotocopias</option><option>Otros</option></select></div>
+<div><label>Monto (Bs)</label><input id="amount" type="number" min=".01" step=".01" required placeholder="Ej. 25"></div>
+<div class="full"><label>Descripción</label><input id="desc" maxlength="80" placeholder="Ej. Cuaderno"></div>
+<div class="full"><button>Agregar movimiento</button></div></form></section>
+<section class="panel"><h2>Pagos escolares</h2><form id="pf">
+<div><label>Fecha</label><input id="pdate" type="date" required></div>
+<div><label>Estado</label><select id="status"><option>Pendiente</option><option>Pagado</option></select></div>
+<div><label>Concepto</label><input id="concept" required maxlength="60" placeholder="Ej. Actividad escolar"></div>
+<div><label>Monto (Bs)</label><input id="pamount" type="number" min=".01" step=".01" required></div>
+<div class="full"><button>Agregar pago</button></div></form><p class="muted" id="ptotals"></p></section>
+<section class="panel"><h2>Mis movimientos</h2><div class="tablewrap"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Detalle</th><th>Monto</th><th></th></tr></thead><tbody id="mr"></tbody></table></div><p><button class="secondary" id="csv">Exportar movimientos CSV</button></p></section>
+<section class="panel"><h2>Mis pagos</h2><div class="tablewrap"><table><thead><tr><th>Fecha</th><th>Concepto</th><th>Estado</th><th>Monto</th><th></th></tr></thead><tbody id="pr"></tbody></table></div></section>
+<section class="panel"><h2>Gráfico de gastos por categoría</h2><div id="chart"></div></section>
+<section class="panel"><h2>Respaldo de datos</h2><p class="muted">Puedes descargar una copia y recuperarla después en este prototipo.</p><button class="secondary" id="backup">Descargar respaldo</button> <label class="filelabel">Importar respaldo<input id="restore" type="file" accept=".json" hidden></label> <button class="danger" id="clear">Borrar datos</button></section>
+</div></main>
+<script>
+const K='mce_demo_v1';let s={movements:[],payments:[]};const $=x=>document.getElementById(x);
+const today=new Date().toISOString().slice(0,10);$('date').value=today;$('pdate').value=today;
+const money=n=>'Bs '+Number(n||0).toLocaleString('es-BO',{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function save(){localStorage.setItem(K,JSON.stringify(s));render()}
+function render(){
+let inc=s.movements.filter(x=>x.type==='Ingreso').reduce((a,x)=>a+x.amount,0),out=s.movements.filter(x=>x.type==='Gasto').reduce((a,x)=>a+x.amount,0);
+$('income').textContent=money(inc);$('expenses').textContent=money(out);$('balance').textContent=money(inc-out);
+let paid=s.payments.filter(x=>x.status==='Pagado').reduce((a,x)=>a+x.amount,0),pending=s.payments.filter(x=>x.status==='Pendiente').reduce((a,x)=>a+x.amount,0);$('ptotals').textContent='Pagado: '+money(paid)+' · Pendiente: '+money(pending);
+$('mr').innerHTML=s.movements.length?s.movements.slice().reverse().map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.type)}</td><td>${esc(x.cat)} ${esc(x.desc)}</td><td>${money(x.amount)}</td><td><button class="danger" data-m="${x.id}">×</button></td></tr>`).join(''):'<tr><td colspan="5" class="empty">Aún no hay movimientos.</td></tr>';
+$('pr').innerHTML=s.payments.length?s.payments.slice().reverse().map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.concept)}</td><td>${esc(x.status)}</td><td>${money(x.amount)}</td><td><button class="danger" data-p="${x.id}">×</button></td></tr>`).join(''):'<tr><td colspan="5" class="empty">Aún no hay pagos.</td></tr>';
+let c={};s.movements.filter(x=>x.type==='Gasto').forEach(x=>c[x.cat]=(c[x.cat]||0)+x.amount);let a=Object.entries(c),max=Math.max(1,...a.map(x=>x[1]));
+$('chart').innerHTML=a.length?a.map(([n,v])=>`<div class="bar"><span>${esc(n)}</span><div class="track"><div class="fill" style="width:${v/max*100}%"></div></div><b>${money(v)}</b></div>`).join(''):'<div class="empty">Agrega gastos para ver el gráfico.</div>';
+}
+$('mf').onsubmit=e=>{e.preventDefault();let amount=+$('amount').value;if(amount<=0)return;s.movements.push({id:Date.now()+Math.random(),date:$('date').value,type:$('type').value,cat:$('cat').value,desc:$('desc').value,amount});e.target.reset();$('date').value=today;save()};
+$('pf').onsubmit=e=>{e.preventDefault();let amount=+$('pamount').value;if(amount<=0)return;s.payments.push({id:Date.now()+Math.random(),date:$('pdate').value,concept:$('concept').value,status:$('status').value,amount});e.target.reset();$('pdate').value=today;save()};
+document.addEventListener('click',e=>{if(e.target.dataset.m){s.movements=s.movements.filter(x=>String(x.id)!==e.target.dataset.m);save()}if(e.target.dataset.p){s.payments=s.payments.filter(x=>String(x.id)!==e.target.dataset.p);save()}});
+function dl(data,name,type){let u=URL.createObjectURL(new Blob([data],{type})),a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u)}
+$('backup').onclick=()=>dl(JSON.stringify(s,null,2),'respaldo_mi_cuenta.json','application/json');
+$('csv').onclick=()=>{let rows=[['Fecha','Tipo','Categoría','Descripción','Monto'],...s.movements.map(x=>[x.date,x.type,x.cat,x.desc,x.amount])];dl('\ufeff'+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n'),'movimientos.csv','text/csv;charset=utf-8')};
+$('restore').onchange=async e=>{try{let x=JSON.parse(await e.target.files[0].text());if(!Array.isArray(x.movements)||!Array.isArray(x.payments))throw 0;s=x;save();alert('Respaldo importado.')}catch(_){alert('Archivo de respaldo no válido.')}e.target.value=''};
+$('clear').onclick=()=>{if(confirm('¿Borrar todos los movimientos y pagos guardados en este navegador?')){s={movements:[],payments:[]};save()}};
+try{let x=JSON.parse(localStorage.getItem(K));if(x&&Array.isArray(x.movements)&&Array.isArray(x.payments))s=x}catch(e){}render();
+</script></body></html>
